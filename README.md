@@ -1,6 +1,6 @@
-# CoopCart - Couple's Shared Grocery App
+# CoopCart - Grocery Sharing App
 
-A mobile-first PWA for couples to keep a shared grocery list with local-first sync, auto-categorization, and deduplication.
+A mobile-first PWA for users to keep a shared grocery list with local-first sync, auto-categorization, and deduplication.
 
 ## Architecture
 
