@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Room, Item } from '../types';
 import { api } from '../api';
 import { useList } from '../hooks/useList';
 import { useSync } from '../hooks/useSync';
-import { QuickAdd } from './QuickAdd';
-import { ListView } from './ListView';
-import { SyncBar } from './SyncBar';
-import { RoomConnect } from './RoomConnect';
+import { clearItems, clearPendingOps } from '../db';
+import { QuickAdd } from './QuickAdd.tsx';
+import { ListView } from './ListView.tsx';
+import { SyncBar } from './SyncBar.tsx';
+import { RoomConnect } from './RoomConnect.tsx';
 
-export function App() {
+export default function App() {
   const [room, setRoom] = useState<Room | null>(null);
   const [spaceId] = useState('default'); // For MVP, always use default space
   const [version, setVersion] = useState(0);
@@ -21,6 +22,10 @@ export function App() {
 
   const handleCreateRoom = async (pin?: string) => {
     try {
+      // Clear local data when creating a new room
+      await clearItems(spaceId);
+      await clearPendingOps();
+      
       const response = await api.createRoom({ pin });
       setRoom(response.room);
       setVersion(0);
@@ -31,6 +36,10 @@ export function App() {
 
   const handleJoinRoom = async (roomCode: string, pin?: string) => {
     try {
+      // Clear local data when joining a room
+      await clearItems(spaceId);
+      await clearPendingOps();
+      
       const response = await api.joinRoom({ roomCode, pin });
       if (response.success && response.room) {
         setRoom(response.room);
@@ -47,6 +56,7 @@ export function App() {
   const handleAddItem = async (text: string) => {
     const item: Item = {
       id: crypto.randomUUID(),
+      spaceId: spaceId,
       rawText: text,
       name: text,
       category: 'Other',

@@ -3,7 +3,7 @@ import {
   ParseRequest, ParseResponse, MergeRequest, MergeResponse
 } from './types';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000';
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://127.0.0.1:8000';
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {

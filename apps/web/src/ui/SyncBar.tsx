@@ -1,4 +1,3 @@
-import React from 'react';
 import { SyncStatus } from '../types';
 
 interface SyncBarProps {
@@ -42,11 +41,11 @@ export function SyncBar({ pendingCount, status, onSendUpdate }: SyncBarProps) {
         )}
       </div>
       
-      {pendingCount > 0 && status !== 'syncing' && (
+      {pendingCount > 0 && (status === 'idle' || status === 'error') && (
         <button 
           className="sync-button"
           onClick={onSendUpdate}
-          disabled={status === 'syncing'}
+          disabled={false}
         >
           Send Update ({pendingCount})
         </button>

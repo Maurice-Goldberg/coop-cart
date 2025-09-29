@@ -7,6 +7,10 @@ import re
 from typing import List, Dict, Any, Optional, Tuple
 from models import Item
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 # Category keyword mapping
@@ -162,15 +166,25 @@ def categorize_and_dedupe(items: List[Item]) -> List[Item]:
 
 def llm_categorize_and_dedupe(items: List[Item]) -> List[Item]:
     """
-    LLM-based categorizer (placeholder for future implementation).
+    LLM-based categorizer with plug-in support.
     Set LLM_PROVIDER and LLM_API_KEY environment variables to use.
     """
     provider = os.getenv("LLM_PROVIDER")
     api_key = os.getenv("LLM_API_KEY")
     
-    if provider and api_key:
-        # TODO: Implement actual LLM integration
-        # For now, fall back to rules-based approach
-        pass
+    if provider and api_key and api_key != "your_api_key_here":
+        # TODO: Implement actual LLM integration based on provider
+        if provider.lower() == "openai":
+            # return openai_categorize_and_dedupe(items, api_key)
+            pass
+        elif provider.lower() == "anthropic":
+            # return anthropic_categorize_and_dedupe(items, api_key)
+            pass
+        elif provider.lower() == "cohere":
+            # return cohere_categorize_and_dedupe(items, api_key)
+            pass
+        else:
+            print(f"Unknown LLM provider: {provider}")
     
+    # Fall back to rules-based approach
     return categorize_and_dedupe(items)

@@ -9,7 +9,7 @@ export class CoopCartDB extends Dexie {
   constructor() {
     super('CoopCartDB');
     this.version(1).stores({
-      items: 'id, category, name, checked, createdAt',
+      items: 'id, spaceId, category, name, checked, createdAt',
       pendingOps: 'id, type, timestamp',
       meta: 'key'
     });

@@ -1,5 +1,6 @@
 export interface Item {
   id: string;
+  spaceId: string;
   rawText?: string;
   name: string;
   qty?: number;
