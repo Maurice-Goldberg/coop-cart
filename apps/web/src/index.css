@@ -44,6 +44,21 @@ body {
   color: #666;
 }
 
+.leave-room-button {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.leave-room-button:hover {
+  background: #cc3333;
+}
+
 .room-code {
   font-weight: 500;
   color: #2c3e50;
@@ -366,6 +381,39 @@ body {
   cursor: not-allowed;
 }
 
+.sync-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+
+.error-message {
+  color: #d32f2f;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.new-room-button {
+  padding: 0.5rem 1rem;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.new-room-button:hover:not(:disabled) {
+  background: #f57c00;
+}
+
+.new-room-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .main {
@@ -391,6 +439,18 @@ body {
   
   .sync-bar {
     padding: 0.75rem;
+  }
+  
+  /* Make checkboxes larger and more visible on mobile */
+  .item-checkbox {
+    width: 1.5rem;
+    height: 1.5rem;
+    transform: scale(1.2);
+    margin-right: 0.5rem;
+  }
+  
+  .item-actions {
+    margin-left: 0.5rem;
   }
 }
 

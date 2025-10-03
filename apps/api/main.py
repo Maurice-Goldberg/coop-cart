@@ -102,29 +102,25 @@ async def join_room(request: JoinRoomRequest):
 @app.post("/api/parse", response_model=ParseResponse)
 async def parse_text(request: ParseRequest):
     """Parse freeform text into items."""
-    # Split by newlines or commas
-    lines = []
-    for line in request.text.split('\n'):
-        for item in line.split(','):
-            item = item.strip()
-            if item:
-                lines.append(item)
+    # Treat the entire input as a single item
+    text = request.text.strip()
+    if not text:
+        return ParseResponse(items=[])
     
-    items = []
     now = datetime.now()
+    item = Item(
+        id=str(uuid.uuid4()),
+        rawText=text,
+        name=text,
+        category="Other",
+        createdAt=now,
+        updatedAt=now,
+        checked=False
+    )
     
-    for text in lines:
-        if text.strip():
-            item = Item(
-                id=str(uuid.uuid4()),
-                rawText=text,
-                name=text,
-                category="Other",
-                createdAt=now,
-                updatedAt=now,
-                checked=False
-            )
-            items.append(item)
+    # Use LLM categorization to properly categorize the item
+    from llm import llm_categorize_and_dedupe
+    items = llm_categorize_and_dedupe([item])
     
     return ParseResponse(items=items)
 
@@ -162,6 +158,20 @@ async def merge_list(request: MergeRequest):
     return MergeResponse(
         serverVersion=new_list.version,
         list=new_list
+    )
+
+
+@app.get("/api/list/{space_id}", response_model=MergeResponse)
+async def get_list(space_id: str):
+    """Get the current list state for a space."""
+    if space_id not in lists:
+        raise HTTPException(status_code=404, detail="Space not found")
+    
+    server_list = lists[space_id]
+    
+    return MergeResponse(
+        serverVersion=server_list.version,
+        list=server_list
     )
 
 

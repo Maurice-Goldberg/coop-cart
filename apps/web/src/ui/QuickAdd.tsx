@@ -28,6 +28,16 @@ export function QuickAdd({ onAddItem }: QuickAddProps) {
       e.preventDefault();
       handleSubmit(e);
     }
+    // Prevent newlines from being typed
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove any newlines that might be pasted
+    const value = e.target.value.replace(/[\r\n]/g, '');
+    setText(value);
   };
 
   return (
@@ -37,7 +47,7 @@ export function QuickAdd({ onAddItem }: QuickAddProps) {
           <input
             type="text"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleChange}
             onKeyPress={handleKeyPress}
             placeholder="Add an item to your grocery list..."
             disabled={loading}

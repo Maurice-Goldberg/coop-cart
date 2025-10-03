@@ -3,13 +3,13 @@ import { SyncStatus } from '../types';
 interface SyncBarProps {
   pendingCount: number;
   status: SyncStatus;
-  onSendUpdate: () => void;
+  error?: string | null;
+  onSync: () => void;
+  onRoomExpired?: () => void;
 }
 
-export function SyncBar({ pendingCount, status, onSendUpdate }: SyncBarProps) {
-  if (pendingCount === 0 && status === 'idle') {
-    return null;
-  }
+export function SyncBar({ pendingCount, status, error, onSync, onRoomExpired }: SyncBarProps) {
+  // Always show sync bar so users can sync to get updates from others
 
   const getStatusText = () => {
     switch (status) {
@@ -39,17 +39,34 @@ export function SyncBar({ pendingCount, status, onSendUpdate }: SyncBarProps) {
             {pendingCount} pending change{pendingCount !== 1 ? 's' : ''}
           </span>
         )}
+        {error && (
+          <span className="error-message">
+            {error}
+          </span>
+        )}
       </div>
       
-      {pendingCount > 0 && (status === 'idle' || status === 'error') && (
-        <button 
-          className="sync-button"
-          onClick={onSendUpdate}
-          disabled={false}
-        >
-          Send Update ({pendingCount})
-        </button>
-      )}
+      <div className="sync-actions">
+        {(status === 'idle' || status === 'error') && (
+          <button 
+            className="sync-button"
+            onClick={onSync}
+            disabled={false}
+          >
+            {pendingCount > 0 ? `Sync (${pendingCount} pending)` : 'Sync'}
+          </button>
+        )}
+        
+        {error && error.includes('Room expired') && onRoomExpired && (
+          <button 
+            className="new-room-button"
+            onClick={onRoomExpired}
+            disabled={false}
+          >
+            Create New Room
+          </button>
+        )}
+      </div>
     </div>
   );
 }

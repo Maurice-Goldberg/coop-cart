@@ -10,12 +10,20 @@ import { SyncBar } from './SyncBar.tsx';
 import { RoomConnect } from './RoomConnect.tsx';
 
 export default function App() {
-  const [room, setRoom] = useState<Room | null>(null);
+  const [room, setRoom] = useState<Room | null>(() => {
+    // Try to restore room from localStorage on app load
+    try {
+      const savedRoom = localStorage.getItem('coop-cart-room');
+      return savedRoom ? JSON.parse(savedRoom) : null;
+    } catch {
+      return null;
+    }
+  });
   const [spaceId] = useState('default'); // For MVP, always use default space
   const [version, setVersion] = useState(0);
 
-  const { items, addItem, replaceItems, refresh } = useList(spaceId);
-  const { status, pendingOps, addPendingOperation, sendUpdate, resetStatus } = useSync(
+  const { items, addItem, updateItem, replaceItems, refresh } = useList(spaceId);
+  const { status, pendingOps, error, addPendingOperation, sync, resetStatus } = useSync(
     room?.roomCode || '', 
     spaceId
   );
@@ -28,6 +36,14 @@ export default function App() {
     await refresh();
   };
 
+  // Leave room and clear all data
+  const handleLeaveRoom = async () => {
+    await clearLocalData();
+    setRoom(null);
+    setVersion(0);
+    localStorage.removeItem('coop-cart-room');
+  };
+
   const handleCreateRoom = async (pin?: string) => {
     try {
       // Clear ALL local data when creating a new room
@@ -36,6 +52,9 @@ export default function App() {
       const response = await api.createRoom({ pin });
       setRoom(response.room);
       setVersion(0);
+      
+      // Save room to localStorage
+      localStorage.setItem('coop-cart-room', JSON.stringify(response.room));
     } catch (error) {
       console.error('Failed to create room:', error);
     }
@@ -50,6 +69,9 @@ export default function App() {
       if (response.success && response.room) {
         setRoom(response.room);
         setVersion(0);
+        
+        // Save room to localStorage
+        localStorage.setItem('coop-cart-room', JSON.stringify(response.room));
       } else {
         alert(response.message || 'Failed to join room');
       }
@@ -60,40 +82,98 @@ export default function App() {
   };
 
   const handleAddItem = async (text: string) => {
-    const item: Item = {
-      id: crypto.randomUUID(),
-      spaceId: spaceId,
-      rawText: text,
-      name: text,
-      category: 'Other',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      checked: false,
-    };
-
     try {
+      // Use parse endpoint to get immediate categorization
+      const parseResponse = await api.parseText({ text });
+      if (parseResponse.items.length > 0) {
+        const parsedItem = parseResponse.items[0];
+        const item: Item = {
+          id: crypto.randomUUID(),
+          spaceId: spaceId,
+          rawText: parsedItem.rawText || text,
+          name: parsedItem.name || text,
+          category: parsedItem.category || 'Other',
+          qty: parsedItem.qty,
+          unit: parsedItem.unit,
+          notes: parsedItem.notes,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          checked: false,
+        };
+
+        await addItem(item);
+        await addPendingOperation({
+          type: 'add_item',
+          data: { item },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to add item:', error);
+      // Fallback to original behavior if parsing fails
+      const item: Item = {
+        id: crypto.randomUUID(),
+        spaceId: spaceId,
+        rawText: text,
+        name: text,
+        category: 'Other',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        checked: false,
+      };
+
       await addItem(item);
       await addPendingOperation({
         type: 'add_item',
         data: { item },
       });
-    } catch (error) {
-      console.error('Failed to add item:', error);
     }
   };
 
-  const handleSendUpdate = async () => {
+  const handleToggleItem = async (id: string) => {
+    try {
+      // Find the item to toggle
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      // Update local state immediately
+      await updateItem(id, { checked: !item.checked });
+
+      // Add to pending operations for sync
+      await addPendingOperation({
+        type: 'toggle_item',
+        data: { id },
+      });
+    } catch (error) {
+      console.error('Failed to toggle item:', error);
+    }
+  };
+
+  const handleSync = async () => {
     if (!room) return;
 
     try {
-      const response = await sendUpdate(version);
+      const response = await sync(version);
       if (response) {
         await replaceItems(response.list.items);
         setVersion(response.serverVersion);
         resetStatus();
       }
     } catch (error) {
-      console.error('Failed to send update:', error);
+      console.error('Failed to sync:', error);
+    }
+  };
+
+  // Handle room expiration by creating a new room
+  const handleRoomExpired = async () => {
+    try {
+      await clearLocalData();
+      const response = await api.createRoom({});
+      setRoom(response.room);
+      setVersion(0);
+      localStorage.setItem('coop-cart-room', JSON.stringify(response.room));
+      resetStatus();
+    } catch (error) {
+      console.error('Failed to create new room:', error);
     }
   };
 
@@ -122,6 +202,13 @@ export default function App() {
             <span className="room-code">Room: {room.roomCode}</span>
             <span className="version">v{version}</span>
             <span className={`sync-status ${status}`}>{status}</span>
+            <button 
+              className="leave-room-button"
+              onClick={handleLeaveRoom}
+              title="Leave Room"
+            >
+              Leave Room
+            </button>
           </div>
         )}
       </header>
@@ -135,11 +222,14 @@ export default function App() {
             <ListView 
               itemsByCategory={itemsByCategory} 
               sortedCategories={sortedCategories}
+              onToggleItem={handleToggleItem}
             />
             <SyncBar 
               pendingCount={pendingOps.length}
               status={status}
-              onSendUpdate={handleSendUpdate}
+              error={error}
+              onSync={handleSync}
+              onRoomExpired={handleRoomExpired}
             />
           </>
         )}

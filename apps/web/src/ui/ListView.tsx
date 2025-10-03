@@ -3,9 +3,10 @@ import { Item } from '../types';
 interface ListViewProps {
   itemsByCategory: Record<string, Item[]>;
   sortedCategories: string[];
+  onToggleItem: (id: string) => void;
 }
 
-export function ListView({ itemsByCategory, sortedCategories }: ListViewProps) {
+export function ListView({ itemsByCategory, sortedCategories, onToggleItem }: ListViewProps) {
   if (sortedCategories.length === 0) {
     return (
       <div className="list-view">
@@ -24,6 +25,7 @@ export function ListView({ itemsByCategory, sortedCategories }: ListViewProps) {
           key={category}
           title={category}
           items={itemsByCategory[category]}
+          onToggleItem={onToggleItem}
         />
       ))}
     </div>
@@ -33,15 +35,16 @@ export function ListView({ itemsByCategory, sortedCategories }: ListViewProps) {
 interface SectionProps {
   title: string;
   items: Item[];
+  onToggleItem: (id: string) => void;
 }
 
-function Section({ title, items }: SectionProps) {
+function Section({ title, items, onToggleItem }: SectionProps) {
   return (
     <div className="section">
       <h3 className="section-title">{title}</h3>
       <div className="items">
         {items.map(item => (
-          <ItemComponent key={item.id} item={item} />
+          <ItemComponent key={item.id} item={item} onToggleItem={onToggleItem} />
         ))}
       </div>
     </div>
@@ -50,9 +53,10 @@ function Section({ title, items }: SectionProps) {
 
 interface ItemComponentProps {
   item: Item;
+  onToggleItem: (id: string) => void;
 }
 
-function ItemComponent({ item }: ItemComponentProps) {
+function ItemComponent({ item, onToggleItem }: ItemComponentProps) {
   const displayName = item.name;
   const displayQty = item.qty ? `${item.qty}${item.unit ? ` ${item.unit}` : ''}` : '';
   const displayText = displayQty ? `${displayQty} ${displayName}` : displayName;
@@ -69,7 +73,7 @@ function ItemComponent({ item }: ItemComponentProps) {
         <input 
           type="checkbox" 
           checked={item.checked}
-          readOnly
+          onChange={() => onToggleItem(item.id)}
           className="item-checkbox"
         />
       </div>

@@ -59,6 +59,10 @@ export const api = {
     });
   },
 
+  async getList(spaceId: string): Promise<MergeResponse> {
+    return request<MergeResponse>(`/api/list/${spaceId}`);
+  },
+
   async healthCheck(): Promise<{ status: string; rooms: number; lists: number }> {
     return request<{ status: string; rooms: number; lists: number }>('/api/health');
   },

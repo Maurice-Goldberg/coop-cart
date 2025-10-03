@@ -25,7 +25,7 @@ def apply_ops(base_list: GroceryList, ops: List[Dict[str, Any]]) -> GroceryList:
         op_type = op.get("type")
         
         if op_type == "add_item":
-            item_data = op.get("item", {})
+            item_data = op.get("data", {}).get("item", {})
             new_item = Item(
                 id=item_data.get("id", str(uuid.uuid4())),
                 rawText=item_data.get("rawText"),
@@ -41,8 +41,8 @@ def apply_ops(base_list: GroceryList, ops: List[Dict[str, Any]]) -> GroceryList:
             new_list.items.append(new_item)
             
         elif op_type == "update_item":
-            item_id = op.get("id")
-            patch = op.get("patch", {})
+            item_id = op.get("data", {}).get("id")
+            patch = op.get("data", {}).get("patch", {})
             
             for item in new_list.items:
                 if item.id == item_id:
@@ -53,7 +53,7 @@ def apply_ops(base_list: GroceryList, ops: List[Dict[str, Any]]) -> GroceryList:
                     break
                     
         elif op_type == "toggle_item":
-            item_id = op.get("id")
+            item_id = op.get("data", {}).get("id")
             
             for item in new_list.items:
                 if item.id == item_id:
@@ -62,7 +62,7 @@ def apply_ops(base_list: GroceryList, ops: List[Dict[str, Any]]) -> GroceryList:
                     break
                     
         elif op_type == "remove_item":
-            item_id = op.get("id")
+            item_id = op.get("data", {}).get("id")
             new_list.items = [item for item in new_list.items if item.id != item_id]
     
     return new_list
