@@ -3,7 +3,7 @@ import { Room, Item } from '../types';
 import { api } from '../api';
 import { useList } from '../hooks/useList';
 import { useSync } from '../hooks/useSync';
-import { clearItems, clearPendingOps } from '../db';
+import { clearPendingOps, db } from '../db';
 import { QuickAdd } from './QuickAdd.tsx';
 import { ListView } from './ListView.tsx';
 import { SyncBar } from './SyncBar.tsx';
@@ -14,17 +14,24 @@ export default function App() {
   const [spaceId] = useState('default'); // For MVP, always use default space
   const [version, setVersion] = useState(0);
 
-  const { items, addItem, replaceItems } = useList(spaceId);
+  const { items, addItem, replaceItems, refresh } = useList(spaceId);
   const { status, pendingOps, addPendingOperation, sendUpdate, resetStatus } = useSync(
     room?.roomCode || '', 
     spaceId
   );
 
+  // Clear local data when room changes
+  const clearLocalData = async () => {
+    await db.items.clear();
+    await clearPendingOps();
+    // Refresh the items list to reflect the cleared database
+    await refresh();
+  };
+
   const handleCreateRoom = async (pin?: string) => {
     try {
-      // Clear local data when creating a new room
-      await clearItems(spaceId);
-      await clearPendingOps();
+      // Clear ALL local data when creating a new room
+      await clearLocalData();
       
       const response = await api.createRoom({ pin });
       setRoom(response.room);
@@ -36,9 +43,8 @@ export default function App() {
 
   const handleJoinRoom = async (roomCode: string, pin?: string) => {
     try {
-      // Clear local data when joining a room
-      await clearItems(spaceId);
-      await clearPendingOps();
+      // Clear ALL local data when joining a room
+      await clearLocalData();
       
       const response = await api.joinRoom({ roomCode, pin });
       if (response.success && response.room) {

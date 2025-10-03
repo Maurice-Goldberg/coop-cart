@@ -4,6 +4,8 @@ This is a rules-based stub that can be replaced with an LLM provider.
 """
 
 import re
+import json
+import requests
 from typing import List, Dict, Any, Optional, Tuple
 from models import Item
 import os
@@ -16,7 +18,7 @@ load_dotenv()
 # Category keyword mapping
 CATEGORY_KEYWORDS = {
     "Dairy & Eggs": [
-        "milk", "cheese", "butter", "yogurt", "cream", "eggs", "dairy", "sour cream",
+        "milk", "cheese", "butter", "yogurt", "cream", "eggs", "egg", "dairy", "sour cream",
         "cottage cheese", "mozzarella", "cheddar", "parmesan", "swiss", "american cheese"
     ],
     "Produce": [
@@ -56,7 +58,10 @@ def normalize_name(name: str) -> str:
     if normalized.endswith('s') and len(normalized) > 3:
         # Don't remove 's' from words ending in 'ss' or short words
         if not normalized.endswith('ss') and not normalized.endswith('ies'):
-            normalized = normalized[:-1]
+            # Keep important plurals that are in our keywords
+            important_plurals = ['eggs', 'chips', 'nuts', 'beans']
+            if normalized not in important_plurals:
+                normalized = normalized[:-1]
     
     return normalized
 
@@ -173,18 +178,248 @@ def llm_categorize_and_dedupe(items: List[Item]) -> List[Item]:
     api_key = os.getenv("LLM_API_KEY")
     
     if provider and api_key and api_key != "your_api_key_here":
-        # TODO: Implement actual LLM integration based on provider
-        if provider.lower() == "openai":
-            # return openai_categorize_and_dedupe(items, api_key)
-            pass
-        elif provider.lower() == "anthropic":
-            # return anthropic_categorize_and_dedupe(items, api_key)
-            pass
-        elif provider.lower() == "cohere":
-            # return cohere_categorize_and_dedupe(items, api_key)
-            pass
-        else:
-            print(f"Unknown LLM provider: {provider}")
+        try:
+            if provider.lower() == "openai":
+                return openai_categorize_and_dedupe(items, api_key)
+            elif provider.lower() == "anthropic":
+                return anthropic_categorize_and_dedupe(items, api_key)
+            elif provider.lower() == "cohere":
+                return cohere_categorize_and_dedupe(items, api_key)
+            else:
+                print(f"Unknown LLM provider: {provider}")
+        except Exception as e:
+            print(f"LLM categorization failed: {e}")
+            print("Falling back to rules-based approach")
     
     # Fall back to rules-based approach
     return categorize_and_dedupe(items)
+
+
+def openai_categorize_and_dedupe(items: List[Item], api_key: str) -> List[Item]:
+    """Use OpenAI API to categorize and deduplicate items."""
+    try:
+        import openai
+        client = openai.OpenAI(api_key=api_key)
+        
+        # Prepare items for LLM
+        item_names = [item.name for item in items]
+        
+        prompt = f"""
+You are a grocery list categorizer. Categorize these items into appropriate grocery store categories:
+
+Items: {', '.join(item_names)}
+
+Categories to choose from:
+- Dairy & Eggs (milk, cheese, eggs, yogurt, butter, etc.)
+- Produce (fruits, vegetables, herbs)
+- Meat & Seafood (chicken, beef, fish, pork, etc.)
+- Pantry (rice, pasta, bread, cereal, canned goods, etc.)
+- Frozen (frozen foods, ice cream, frozen vegetables)
+- Beverages (drinks, water, juice, coffee, tea, etc.)
+- Bakery (fresh bread, pastries, cakes, etc.)
+- Other (anything that doesn't fit the above categories)
+
+Also identify any duplicate items that should be merged (e.g., "milk" and "1 gallon milk" should be merged).
+
+Return a JSON response with this structure:
+{{
+    "categorized_items": [
+        {{
+            "name": "item name",
+            "category": "category name",
+            "merged_with": ["list of duplicate item names to merge with"]
+        }}
+    ]
+}}
+
+Only return the JSON, no other text.
+"""
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1
+        )
+        
+        result = json.loads(response.choices[0].message.content)
+        
+        # Process LLM results
+        return process_llm_results(items, result)
+        
+    except Exception as e:
+        print(f"OpenAI API error: {e}")
+        raise
+
+
+def anthropic_categorize_and_dedupe(items: List[Item], api_key: str) -> List[Item]:
+    """Use Anthropic API to categorize and deduplicate items."""
+    try:
+        item_names = [item.name for item in items]
+        
+        prompt = f"""
+You are a grocery list categorizer. Categorize these items into appropriate grocery store categories:
+
+Items: {', '.join(item_names)}
+
+Categories to choose from:
+- Dairy & Eggs (milk, cheese, eggs, yogurt, butter, etc.)
+- Produce (fruits, vegetables, herbs)
+- Meat & Seafood (chicken, beef, fish, pork, etc.)
+- Pantry (rice, pasta, bread, cereal, canned goods, etc.)
+- Frozen (frozen foods, ice cream, frozen vegetables)
+- Beverages (drinks, water, juice, coffee, tea, etc.)
+- Bakery (fresh bread, pastries, cakes, etc.)
+- Other (anything that doesn't fit the above categories)
+
+Also identify any duplicate items that should be merged (e.g., "milk" and "1 gallon milk" should be merged).
+
+Return a JSON response with this structure:
+{{
+    "categorized_items": [
+        {{
+            "name": "item name",
+            "category": "category name",
+            "merged_with": ["list of duplicate item names to merge with"]
+        }}
+    ]
+}}
+
+Only return the JSON, no other text.
+"""
+        
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "Content-Type": "application/json",
+                "anthropic-version": "2023-06-01"
+            },
+            json={
+                "model": "claude-3-sonnet-20240229",
+                "max_tokens": 1000,
+                "messages": [{"role": "user", "content": prompt}]
+            }
+        )
+        
+        if response.status_code != 200:
+            raise Exception(f"Anthropic API error: {response.status_code} - {response.text}")
+        
+        result = json.loads(response.json()["content"][0]["text"])
+        return process_llm_results(items, result)
+        
+    except Exception as e:
+        print(f"Anthropic API error: {e}")
+        raise
+
+
+def cohere_categorize_and_dedupe(items: List[Item], api_key: str) -> List[Item]:
+    """Use Cohere API to categorize and deduplicate items."""
+    try:
+        item_names = [item.name for item in items]
+        
+        prompt = f"""
+You are a grocery list categorizer. Categorize these items into appropriate grocery store categories:
+
+Items: {', '.join(item_names)}
+
+Categories to choose from:
+- Dairy & Eggs (milk, cheese, eggs, yogurt, butter, etc.)
+- Produce (fruits, vegetables, herbs)
+- Meat & Seafood (chicken, beef, fish, pork, etc.)
+- Pantry (rice, pasta, bread, cereal, canned goods, etc.)
+- Frozen (frozen foods, ice cream, frozen vegetables)
+- Beverages (drinks, water, juice, coffee, tea, etc.)
+- Bakery (fresh bread, pastries, cakes, etc.)
+- Other (anything that doesn't fit the above categories)
+
+Also identify any duplicate items that should be merged (e.g., "milk" and "1 gallon milk" should be merged).
+
+Return a JSON response with this structure:
+{{
+    "categorized_items": [
+        {{
+            "name": "item name",
+            "category": "category name",
+            "merged_with": ["list of duplicate item names to merge with"]
+        }}
+    ]
+}}
+
+Only return the JSON, no other text.
+"""
+        
+        response = requests.post(
+            "https://api.cohere.ai/v1/generate",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "command",
+                "prompt": prompt,
+                "max_tokens": 1000,
+                "temperature": 0.1
+            }
+        )
+        
+        if response.status_code != 200:
+            raise Exception(f"Cohere API error: {response.status_code} - {response.text}")
+        
+        result = json.loads(response.json()["generations"][0]["text"])
+        return process_llm_results(items, result)
+        
+    except Exception as e:
+        print(f"Cohere API error: {e}")
+        raise
+
+
+def process_llm_results(items: List[Item], llm_result: Dict[str, Any]) -> List[Item]:
+    """Process LLM results and apply categorization and deduplication."""
+    # Create a mapping of original items by name
+    items_by_name = {item.name: item for item in items}
+    
+    # Process categorized items from LLM
+    processed_items = []
+    processed_names = set()
+    
+    for llm_item in llm_result.get("categorized_items", []):
+        item_name = llm_item["name"]
+        category = llm_item["category"]
+        merged_with = llm_item.get("merged_with", [])
+        
+        if item_name in items_by_name and item_name not in processed_names:
+            # Get the original item
+            original_item = items_by_name[item_name]
+            original_item.category = category
+            
+            # Handle merging with other items
+            for merge_name in merged_with:
+                if merge_name in items_by_name and merge_name not in processed_names:
+                    merge_item = items_by_name[merge_name]
+                    # Merge quantities if both have them
+                    if original_item.qty and merge_item.qty:
+                        original_item.qty += merge_item.qty
+                    elif merge_item.qty and not original_item.qty:
+                        original_item.qty = merge_item.qty
+                    
+                    # Merge notes
+                    if merge_item.notes and not original_item.notes:
+                        original_item.notes = merge_item.notes
+                    elif merge_item.notes and original_item.notes:
+                        original_item.notes = f"{original_item.notes}, {merge_item.notes}"
+                    
+                    processed_names.add(merge_name)
+            
+            processed_items.append(original_item)
+            processed_names.add(item_name)
+    
+    # Add any items that weren't processed by LLM
+    for item in items:
+        if item.name not in processed_names:
+            item.category = "Other"  # Default category
+            processed_items.append(item)
+    
+    # Sort by category and name
+    processed_items.sort(key=lambda x: (x.category, x.name.lower()))
+    
+    return processed_items

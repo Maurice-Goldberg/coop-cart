@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: tests
+        name: Run tests
+        entry: make test-pre-commit
+        language: system
+        pass_filenames: false
+        always_run: true

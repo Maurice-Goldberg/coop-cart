@@ -9,23 +9,41 @@ A mobile-first PWA for users to keep a shared grocery list with local-first sync
 - **Sync**: Manual "Send Update / Get Update" with room codes
 - **Features**: Auto-categorization, deduplication, offline-first
 
-## Quick Start
+## 🚀 Quick Start
 
-### Terminal A (API)
+### **Option 1: One-Command Setup (Recommended)**
 ```bash
-cd apps/api
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# Setup everything and start both servers
+make run
 ```
 
-### Terminal B (Web)
+### **Option 2: Manual Setup**
 ```bash
-cd apps/web
-npm install
-echo 'VITE_API_BASE=http://127.0.0.1:8000' > .env
-npm run dev -- --host 0.0.0.0 --port 5173
+# Run the setup script
+./setup.sh
+
+# Then start both servers
+make run
 ```
+
+### **Option 3: Docker Setup**
+```bash
+# Run with Docker Compose
+make docker
+```
+
+## 🛠️ Development Commands
+
+| Command | Description |
+|---------|-------------|
+| `make run` | Start both frontend and backend |
+| `make run-api` | Start only backend API |
+| `make run-web` | Start only frontend web |
+| `make stop` | Stop all servers |
+| `make logs` | Show server logs |
+| `make clean` | Clean dependencies |
+| `make docker` | Run with Docker |
+| `make help` | Show all commands |
 
 ## Usage
 
@@ -39,10 +57,34 @@ npm run dev -- --host 0.0.0.0 --port 5173
 
 - Mobile-first PWA (installable on iOS/Android)
 - Local-first with manual sync
-- Auto-categorization of grocery items
-- Deduplication of similar items
+- **AI-powered categorization** using LLMs (OpenAI, Anthropic, Cohere)
+- Smart deduplication and merging
 - Room-based sharing (no accounts required)
 - Offline support with IndexedDB
+
+## AI-Powered Categorization
+
+CoopCart now supports intelligent categorization using Large Language Models (LLMs) for more accurate and flexible item categorization.
+
+### Quick LLM Setup
+
+```bash
+# Set your LLM provider and API key
+export LLM_PROVIDER=openai
+export LLM_API_KEY=your-api-key-here
+
+# Test the setup
+python test_llm.py
+```
+
+**See [LLM_SETUP.md](LLM_SETUP.md) for detailed configuration instructions.**
+
+### Benefits of LLM Categorization
+
+- **Intelligent understanding** - Handles complex item names and variations
+- **Smart deduplication** - Merges similar items across different phrasings  
+- **Flexible categories** - Adapts to new item types and regional variations
+- **Fallback safety** - Automatically falls back to rules-based approach if LLM fails
 
 ## Tech Stack
 
