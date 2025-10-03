@@ -44,12 +44,12 @@ export default function App() {
     localStorage.removeItem('coop-cart-room');
   };
 
-  const handleCreateRoom = async (pin?: string) => {
+  const handleCreateRoom = async () => {
     try {
       // Clear ALL local data when creating a new room
       await clearLocalData();
       
-      const response = await api.createRoom({ pin });
+      const response = await api.createRoom({});
       setRoom(response.room);
       setVersion(0);
       
@@ -60,12 +60,12 @@ export default function App() {
     }
   };
 
-  const handleJoinRoom = async (roomCode: string, pin?: string) => {
+  const handleJoinRoom = async (roomCode: string) => {
     try {
       // Clear ALL local data when joining a room
       await clearLocalData();
       
-      const response = await api.joinRoom({ roomCode, pin });
+      const response = await api.joinRoom({ roomCode });
       if (response.success && response.room) {
         setRoom(response.room);
         setVersion(0);

@@ -56,7 +56,6 @@ async def create_room(request: CreateRoomRequest):
     # Create room
     room = Room(
         roomCode=room_code,
-        pin=request.pin,
         spaces=[default_space]
     )
     
@@ -85,13 +84,6 @@ async def join_room(request: JoinRoomRequest):
         )
     
     room = rooms[request.roomCode]
-    
-    # Check PIN if required
-    if room.pin and room.pin != request.pin:
-        return JoinRoomResponse(
-            success=False,
-            message="Invalid PIN"
-        )
     
     return JoinRoomResponse(
         success=True,

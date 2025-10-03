@@ -27,7 +27,6 @@ export interface Space {
 
 export interface Room {
   roomCode: string;
-  pin?: string;
   spaces: Space[];
 }
 
@@ -44,7 +43,6 @@ export interface MergeResponse {
 }
 
 export interface CreateRoomRequest {
-  pin?: string;
 }
 
 export interface CreateRoomResponse {
@@ -54,7 +52,6 @@ export interface CreateRoomResponse {
 
 export interface JoinRoomRequest {
   roomCode: string;
-  pin?: string;
 }
 
 export interface JoinRoomResponse {

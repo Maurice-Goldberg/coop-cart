@@ -32,7 +32,6 @@ class Space(BaseModel):
 
 class Room(BaseModel):
     roomCode: str
-    pin: Optional[str] = None
     spaces: TypingList[Space]
 
 
@@ -49,7 +48,7 @@ class MergeResponse(BaseModel):
 
 
 class CreateRoomRequest(BaseModel):
-    pin: Optional[str] = None
+    pass
 
 
 class CreateRoomResponse(BaseModel):
@@ -59,7 +58,6 @@ class CreateRoomResponse(BaseModel):
 
 class JoinRoomRequest(BaseModel):
     roomCode: str
-    pin: Optional[str] = None
 
 
 class JoinRoomResponse(BaseModel):

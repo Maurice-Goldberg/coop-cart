@@ -1,20 +1,19 @@
 import { useState } from 'react';
 
 interface RoomConnectProps {
-  onCreateRoom: (pin?: string) => void;
-  onJoinRoom: (roomCode: string, pin?: string) => void;
+  onCreateRoom: () => void;
+  onJoinRoom: (roomCode: string) => void;
 }
 
 export function RoomConnect({ onCreateRoom, onJoinRoom }: RoomConnectProps) {
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [roomCode, setRoomCode] = useState('');
-  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
     setLoading(true);
     try {
-      await onCreateRoom(pin || undefined);
+      await onCreateRoom();
     } finally {
       setLoading(false);
     }
@@ -28,7 +27,7 @@ export function RoomConnect({ onCreateRoom, onJoinRoom }: RoomConnectProps) {
     
     setLoading(true);
     try {
-      await onJoinRoom(roomCode.trim(), pin || undefined);
+      await onJoinRoom(roomCode.trim());
     } finally {
       setLoading(false);
     }
@@ -55,18 +54,6 @@ export function RoomConnect({ onCreateRoom, onJoinRoom }: RoomConnectProps) {
         <div className="create-form">
           <h2>Create a New Room</h2>
           <p>Create a room and share the code with your partner.</p>
-          
-          <div className="form-group">
-            <label htmlFor="create-pin">PIN (optional)</label>
-            <input
-              id="create-pin"
-              type="text"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="Optional PIN for extra security"
-              maxLength={6}
-            />
-          </div>
 
           <button 
             className="primary-button"
@@ -91,18 +78,6 @@ export function RoomConnect({ onCreateRoom, onJoinRoom }: RoomConnectProps) {
               placeholder="Enter room code"
               maxLength={8}
               style={{ textTransform: 'uppercase' }}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="join-pin">PIN (if required)</label>
-            <input
-              id="join-pin"
-              type="text"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="Enter PIN if required"
-              maxLength={6}
             />
           </div>
 
