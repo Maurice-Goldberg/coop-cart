@@ -135,14 +135,11 @@ export default function App() {
       const item = items.find(i => i.id === id);
       if (!item) return;
 
-      // Update local state immediately
+      // Update local state immediately - no pending operation needed for check/uncheck
       await updateItem(id, { checked: !item.checked });
-
-      // Add to pending operations for sync
-      await addPendingOperation({
-        type: 'toggle_item',
-        data: { id },
-      });
+      
+      // Note: We don't add pending operations for check/uncheck actions
+      // as these are immediate local changes that don't need to be synced
     } catch (error) {
       console.error('Failed to toggle item:', error);
     }
@@ -201,9 +198,17 @@ export default function App() {
           <div className="room-info">
             <span className="room-code">Room: {room.roomCode}</span>
             <span className="version">v{version}</span>
-            <span className={`sync-status ${status}`}>{status}</span>
+            {status !== 'idle' && (
+              <span className={`px-3 py-1 rounded-lg text-fluid-sm font-medium glass-light ${
+                status === 'syncing' ? 'bg-accent-500/15 text-accent-600' :
+                status === 'ok' ? 'bg-primary-500/15 text-primary-600' :
+                'bg-accent-500/15 text-accent-600'
+              }`}>
+                {status}
+              </span>
+            )}
             <button 
-              className="leave-room-button"
+              className="btn-secondary text-fluid-sm px-3 py-1"
               onClick={handleLeaveRoom}
               title="Leave Room"
             >

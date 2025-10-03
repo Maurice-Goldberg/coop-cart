@@ -41,9 +41,9 @@ export function QuickAdd({ onAddItem }: QuickAddProps) {
   };
 
   return (
-    <div className="quick-add">
+    <div className="mb-6">
       <form onSubmit={handleSubmit}>
-        <div className="input-group">
+        <div className="flex gap-3 glass-gradient rounded-xl p-3 shadow-soft border border-white/30 relative overflow-hidden">
           <input
             type="text"
             value={text}
@@ -52,11 +52,12 @@ export function QuickAdd({ onAddItem }: QuickAddProps) {
             placeholder="Add an item to your grocery list..."
             disabled={loading}
             autoFocus
+            className="flex-1 input-glass"
           />
           <button 
             type="submit" 
             disabled={!text.trim() || loading}
-            className="add-button"
+            className="px-4 py-3 btn-primary"
           >
             {loading ? 'Adding...' : 'Add'}
           </button>
